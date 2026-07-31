@@ -1,8 +1,10 @@
-# products/models.py
+from typing import ClassVar
+
 from django.db import models
 
+
 class Product(models.Model):
-    CATEGORY_CHOICES = [
+    CATEGORY_CHOICES: ClassVar[list[tuple[str, str]]] = [
         ('Смартфоны', 'Смартфоны'),
         ('Аксессуары', 'Аксессуары'),
     ]
@@ -19,7 +21,7 @@ class Product(models.Model):
     class Meta:
         verbose_name = 'Товар'
         verbose_name_plural = 'Товары'
-        ordering = ['-created_at']
+        ordering: ClassVar[list[str]] = ['-created_at']
 
     def __str__(self):
         return self.name
@@ -34,7 +36,7 @@ class ProductImage(models.Model):
     class Meta:
         verbose_name = 'Фото товара'
         verbose_name_plural = 'Фото товаров'
-        ordering = ['-is_primary', 'created_at']
+        ordering: ClassVar[list[str]] = ['-is_primary', 'created_at']
 
     def __str__(self):
         return f"{self.product.name} - {self.id}"

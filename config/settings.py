@@ -2,12 +2,10 @@
 Django settings for config project.
 """
 
-from pathlib import Path
 import os
+from pathlib import Path
+
 import dj_database_url
-import cloudinary
-import cloudinary.uploader
-import cloudinary.api
 
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME', ''),

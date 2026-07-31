@@ -1,15 +1,19 @@
 # products/admin.py
+from typing import ClassVar
+
 from django.contrib import admin
 from django.utils.html import format_html
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.decorators import display
+
 from .models import Product, ProductImage
+
 
 class ProductImageInline(TabularInline):
     model = ProductImage
     extra = 1
-    fields = ['image', 'image_preview', 'is_primary']
-    readonly_fields = ['image_preview']
+    fields: ClassVar[list[str]] = ['image', 'image_preview', 'is_primary']
+    readonly_fields: ClassVar[list[str]] = ['image_preview']
     max_num = 10
     
     @display(description='Превью')
@@ -20,12 +24,12 @@ class ProductImageInline(TabularInline):
 
 @admin.register(Product)
 class ProductAdmin(ModelAdmin):
-    list_display = ['display_image', 'name', 'category', 'display_price', 'display_stock', 'created_at']
-    list_filter = ['category', 'in_stock']
+    list_display: ClassVar[list[str]] = ['display_image', 'name', 'category', 'display_price', 'display_stock', 'created_at']
+    list_filter: ClassVar[list[str]] = ['category', 'in_stock']
     list_filter_submit = True
-    search_fields = ['name', 'description']
+    search_fields: ClassVar[list[str]] = ['name', 'description']
     list_per_page = 20
-    inlines = [ProductImageInline]
+    inlines: ClassVar[list[type[ProductImageInline]]] = [ProductImageInline]
     
     fieldsets = (
         ('Основная информация', {
@@ -66,9 +70,9 @@ class ProductAdmin(ModelAdmin):
 
 @admin.register(ProductImage)
 class ProductImageAdmin(ModelAdmin):
-    list_display = ['image_preview', 'product', 'is_primary', 'created_at']
-    list_filter = ['is_primary']
-    readonly_fields = ['image_preview']
+    list_display: ClassVar[list[str]] = ['image_preview', 'product', 'is_primary', 'created_at']
+    list_filter: ClassVar[list[str]] = ['is_primary']
+    readonly_fields: ClassVar[list[str]] = ['image_preview']
 
     @display(description='Превью')
     def image_preview(self, obj):
