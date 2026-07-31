@@ -4,25 +4,35 @@ Django settings for config project.
 
 from pathlib import Path
 import os
+import dj_database_url
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME', ''),
+    'API_KEY': os.environ.get('CLOUDINARY_API_KEY', ''),
+    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET', ''),
+}
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# ========== БЕЗОПАСНОСТЬ ==========
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-*a^)t8oct&2a3el9ahk856$p^ew35zd1i+iw-1i*n#&-kw-_ja'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-*a^)t8oct&2a3el9ahk856$p^ew35zd1i+iw-1i*n#&-kw-_ja')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*']  # Для Render
 
-# Application definition
+# ========== ПРИЛОЖЕНИЯ ==========
 INSTALLED_APPS = [
     'whitenoise.runserver_nostatic',
-    'django.contrib.staticfiles',
-
-    'unfold',  # Должен быть ДО django.contrib.admin
-    'unfold.contrib.filters',  # Кастомные фильтры Unfold
+    'unfold',
+    'unfold.contrib.filters',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -30,15 +40,16 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
-    # Дополнительные приложения
     'rest_framework',
     'corsheaders',
-    'products',  # Наше приложение для товаров
+    'products',
 ]
 
+# ========== МИДЛВАРЫ ==========
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',  # Должен быть в самом верху
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # ✅ Уже есть
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -66,51 +77,45 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# Database
+# ========== БАЗА ДАННЫХ ==========
+# Поддержка PostgreSQL для Render
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default='sqlite:///' + str(BASE_DIR / 'db.sqlite3'),
+        conn_max_age=600
+    )
 }
 
-# Password validation
+# ========== ВАЛИДАЦИЯ ПАРОЛЕЙ ==========
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# Internationalization
-LANGUAGE_CODE = 'ru-ru'  # ← Меняем на русский
-TIME_ZONE = 'Asia/Bishkek'  # ← Меняем на Бишкек
+# ========== ЛОКАЛИЗАЦИЯ ==========
+LANGUAGE_CODE = 'ru-ru'
+TIME_ZONE = 'Asia/Bishkek'
 USE_I18N = True
 USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
-STATIC_URL = 'static/'
+# ========== СТАТИКА ==========
+STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# Media files (загруженные пользователем файлы)
+# WhiteNoise для продакшена
+if not DEBUG:
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# ========== МЕДИА (для Cloudinary позже) ==========
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# Default primary key field type
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-# ========== DRF (Django REST Framework) ==========
+# ========== DRF ==========
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',  # Для разработки
+        'rest_framework.permissions.AllowAny',
     ],
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
@@ -119,19 +124,15 @@ REST_FRAMEWORK = {
 }
 
 # ========== CORS ==========
-# Разрешаем все источники для разработки
 CORS_ALLOW_ALL_ORIGINS = True
-ALLOWED_HOSTS = ['*']
-# Для продакшена раскомментируй:
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:5173",
-#     "https://telephone-osh.vercel.app",
-#     "https://telephone-osh.onrender.com",
-# ]
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "https://telephone-osh.vercel.app",
+    "https://telephone-osh.onrender.com",
+]
 
-# ========== UNFOLD ADMIN THEME CONFIGURATION ==========
+# ========== UNFOLD ==========
 from django.urls import reverse_lazy
-# config/settings.py (уже есть, проверь что все правильно)
 
 UNFOLD = {
     "SITE_TITLE": "Телефон Ош",
@@ -139,7 +140,7 @@ UNFOLD = {
     "SITE_SUBTITLE": "Современная панель управления каталогом",
     "SHOW_HISTORY": True,
     "SHOW_VIEW_ON_SITE": False,
-    "THEME": "dark",  # dark / light
+    "THEME": "dark",
     "SIDEBAR": {
         "show_search": True,
         "show_all_applications": True,
@@ -181,3 +182,6 @@ UNFOLD = {
         ],
     },
 }
+
+# ========== DEFAULT PRIMARY KEY ==========
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
